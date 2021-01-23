@@ -1,5 +1,5 @@
 const express = require('express')
-const { uuid } = require('uuidv4')
+const { uuid, isUuid } = require('uuidv4')
 
 //! Métodos HTTP
 //? GET: Obter dados
@@ -27,12 +27,39 @@ const { uuid } = require('uuidv4')
 //? Erros do cliente (400-499)
 //? Erros do servidor (500-599).
 
-const app = express()
-app.use(express.json()) //? para todas as routes usar json no body
+//! Middleware
+//? Interceptador de requisições
+//? É uma função(req, res, next) {}
+//? que pode alterar dados ou interrompe-la (retornado algo)
+//? rotas são um tipo de middlewares
+//? next() é usado para dar seguimento ao app
+//? se nao usar next ficara em loop infinito
+//? código q vir após o next sera executado depois da rota
 
 const projects = [] //? fake database
 
-app.get('/projects', (req, res) => {
+const app = express()
+app.use(express.json()) //? para todas as routes usar json no body
+
+
+function logReq(req, res, next) {
+  const { method, url } = req
+  const logLabel = `[${method.toUpperCase()}] ${url}`
+
+  console.log(logLabel)
+  next()
+}
+
+function validateProjectId(req, res, next) {
+  const { id } = req.params
+
+  return !UUid(id) ? res.status(400).json({ error: "Invalid project id" }) : next()
+}
+
+//app.use(logReq) //? usar o middleware logReq em todas as rotas
+app.use('/projects/:id', validateProjectId) //? usar na rota projects/:id
+
+app.get('/projects', logReq, (req, res) => {
   const { title } = req.query
   const results = title ? projects.filter(project => project.title.includes(title)) : projects
 
